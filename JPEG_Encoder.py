@@ -78,11 +78,13 @@ def bin_to_chr(b):
     return chr(result)
 
 def jsonConvert(Data, huffmancode):
-    r= len(Data)%8
+    r= len(Data)%7
     reminder= Data[-r:]
     output = ""
-    for i in range(len(Data)//8):
-        output += bin_to_chr(Data[i*8:i*8+8])
+    for i in range(len(Data)//7):
+        #print(bin_to_chr(Data[i*7:i*7+7]))
+        output += bin_to_chr(Data[i*7:i*7+7])
+    #print(output)
     return {'remainder':reminder, 'data':output, 'huffmancode':huffmancode}
 
 
@@ -93,6 +95,7 @@ def main():
     #RESIZING IMAGE AND CONVERTING IT INTO ARRAY
     resize_ratio = 25
     rows, columns = img.size
+    print(img.size)
     rows = int(rows*(resize_ratio/100))
     columns = int(columns*(resize_ratio/100))
     rows = 360
@@ -133,25 +136,6 @@ def main():
                     dcStats[pixels[i][j][k]] += 1
                 else:
                     acStats[pixels[i][j][k]] += 1
-                """
-                if i%8==0 and j%8==0:
-                    if pixels[i][j][k] in dcStats.keys():
-                        dcStats[pixels[i][j][k]] += 1
-                    else:
-                        dcStats[pixels[i][j][k]] = 1
-                else:
-                    if pixels[i][j][k] in acStats.keys():
-                        acStats[pixels[i][j][k]] += 1
-                    else:
-                        acStats[pixels[i][j][k]] = 1
-                """
-
-    #for temp in statsArrayAc:
-    #    print(temp[0],end=", ")
-    #for key,value in acStats.items():
-    #    print(key,value)
-
-    #
 
     acStats = deriveCodeLength(acStats)
     huffmannCodeAc = deriveHuffmannCode(acStats)
@@ -163,7 +147,7 @@ def main():
                 if i%8!=0 or j%8!=0:
                     #print(huffmannCodeAc[chr(pixels[i][j][k])][2:])
                     DataAc += huffmannCodeAc[chr(pixels[i][j][k])][2:]
-    
+    #print(DataAc)
     dcStats = deriveCodeLength(dcStats)
     huffmannCodeDc = deriveHuffmannCode(dcStats)
 
@@ -177,6 +161,7 @@ def main():
     
     mainDict = {}
 
+    mainDict['shape'] = (rows, columns)
     mainDict['DC'] = jsonConvert(DataDc, huffmannCodeDc)
     mainDict['AC'] = jsonConvert(DataAc, huffmannCodeAc)
 
@@ -184,21 +169,6 @@ def main():
 
     with open(image_file_name.split('.')[0]+"_encoded.json", "w") as outfile:
         json.dump(mainDict, outfile)
-    
-    #print(mainDict['AC']['data'])
-
-
-    """
-    deriveCodeLength(statsArrayDc,dcStats)
-    huffmannCodeDc = deriveHuffmannCode(dcStats)
-
-    DataDc = bin(0)
-    for i in range(len(pixels)):
-        for j in range(len(pixels[0])):
-            for k in range(3):
-                if i%8==0 and j%8==0:
-                    DataDc += huffmannCodeDc[pixels[i][j][k]]
-    """
 
 if __name__ == '__main__':
     main()

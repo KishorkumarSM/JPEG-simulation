@@ -1,8 +1,4 @@
-from googledrivedownloader import GoogleDriveDownloader as gdd
-
-gdd.download_file_from_google_drive(file_id='https://drive.google.com/file/d/13Kro0PwDfvHPoxPz1jNnJSZVoaSduVFd/view?usp=sharing',
-                                    dest_path='./image.zip',
-                                    unzip=True)
+print(chr(64))
 
 # BETTER SORTING
 #print(len(huffmannTableAc))
