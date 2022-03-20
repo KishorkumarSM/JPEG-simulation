@@ -1,7 +1,9 @@
+from collections import defaultdict
 import math
 import numpy as np
 from PIL import Image
 from scipy.fftpack import dct, idct
+import json
 
 def quantization(bl):
     q=np.array([[16,11,10,16,24,40,51,61]
@@ -43,11 +45,11 @@ def deriveCodeLength(stats):
         statsArray.append(z)
         statsArray.sort(reverse=True)
         # BETTER SORTING
-    return statsArray, stats
+    return stats
 
 def deriveHuffmannCode(Stats):
     statsArray = []
-    for key,value in acStats.items():
+    for key,value in Stats.items():
         statsArray.append([value,key])
     statsArray.sort()
     huffmannCode = {}
@@ -57,7 +59,7 @@ def deriveHuffmannCode(Stats):
         while codeLength<length:
             codeLength+=1
             code += '0'
-        huffmannCode[character] = code
+        huffmannCode[chr(character)] = code
         code = bin(int(code,2)+1)
     return huffmannCode
 
@@ -69,87 +71,134 @@ for i in range(8):
         else:
             dctBlock[i][j]=math.sqrt(2/8)*math.cos((2*j+1)*i*math.pi/16)
 
-#GETTING IMAGE
-img = Image.open('../DSC00121.tiff')
+def bin_to_chr(b):
+    result = 0
+    for i in range(len(b)):
+        result += (2**(i))*int(b[-i-1])
+    return chr(result)
 
-#RESIZING IMAGE AND CONVERTING IT INTO ARRAY
-resize_ratio = 25
-rows, columns = img.size
-rows = int(rows*(resize_ratio/100))
-columns = int(columns*(resize_ratio/100))
-rows = 360
-columns = 480
-img = img.resize((columns,rows))
-#print(img.size)
-#img.show()
-pixels=np.asarray(img)
+def jsonConvert(Data, huffmancode):
+    r= len(Data)%8
+    reminder= Data[-r:]
+    output = ""
+    for i in range(len(Data)//8):
+        output += bin_to_chr(Data[i*8:i*8+8])
+    return {'remainder':reminder, 'data':output, 'huffmancode':huffmancode}
 
-#APPLYING DCT AND QAUNTIZATION
-for i in range(len(pixels)//8):
-    for j in range(len(pixels[0])//8):
-        for k in range(3):
-            #print(i,j,k)
-            imgBlock = pixels[i*8:(i+1)*8,j*8:(j+1)*8,k].reshape((8,8)).copy()
-            for x in range(8):
-                for y in range(8):
-                    imgBlock[x][y]-=128
-            #imgBlock1=dct(dct(imgblock,axis=0),axis=1)
-            #imgBlock2=reconstruct(quantization(imgblock1))
-            #imgBlock3=idct(idct(imgblock,axis=0),axis=1)
-            imgBlock1 = np.dot(np.dot(dctBlock,imgBlock),dctBlock.T)
-            imgBlock2 = quantization(imgBlock1)
-            #imgBlock3 = (np.dot(np.dot(dctBlock.T,imgBlock2),dctBlock).round()+128).astype(int)
-            for x in range(8):
-                for y in range(8):
-                    pixels[i*8+x][j*8+y][k]=int(imgBlock2[x][y])
 
-#GETTING STATISTICS OF AC AND DC VALUES
-acStats = {}
-dcStats = {}
+def main():
+    #GETTING IMAGE
+    image_file_name = "DSC00121.tiff"
+    img = Image.open("../"+image_file_name)
+    #RESIZING IMAGE AND CONVERTING IT INTO ARRAY
+    resize_ratio = 25
+    rows, columns = img.size
+    rows = int(rows*(resize_ratio/100))
+    columns = int(columns*(resize_ratio/100))
+    rows = 360
+    columns = 480
+    img = img.resize((columns,rows))
+    print(img.size)
 
-for i in range(len(pixels)):
-    for j in range(len(pixels[0])):
-        for k in range(3):
-            if i%8==0 and j%8==0:
-                if pixels[i][j][k] in dcStats.keys():
+    #img.show()
+    pixels=np.asarray(img)
+
+    #APPLYING DCT AND QAUNTIZATION
+    for i in range(len(pixels)//8):
+        for j in range(len(pixels[0])//8):
+            for k in range(3):
+                #print(i,j,k)
+                imgBlock = pixels[i*8:(i+1)*8,j*8:(j+1)*8,k].reshape((8,8)).copy()
+                for x in range(8):
+                    for y in range(8):
+                        imgBlock[x][y]-=128
+                #imgBlock1=dct(dct(imgblock,axis=0),axis=1)
+                #imgBlock2=reconstruct(quantization(imgblock1))
+                #imgBlock3=idct(idct(imgblock,axis=0),axis=1)
+                imgBlock1 = np.dot(np.dot(dctBlock,imgBlock),dctBlock.T)
+                imgBlock2 = quantization(imgBlock1)
+                #imgBlock3 = (np.dot(np.dot(dctBlock.T,imgBlock2),dctBlock).round()+128).astype(int)
+                for x in range(8):
+                    for y in range(8):
+                        pixels[i*8+x][j*8+y][k]=int(imgBlock2[x][y])
+
+    #GETTING STATISTICS OF AC AND DC VALUES
+    acStats = defaultdict(lambda: int(0))
+    dcStats = defaultdict(lambda: int(0))
+
+    for i in range(len(pixels)):
+        for j in range(len(pixels[0])):
+            for k in range(3):
+                if i%8==0 and j%8==0:
                     dcStats[pixels[i][j][k]] += 1
                 else:
-                    dcStats[pixels[i][j][k]] = 1
-            else:
-                if pixels[i][j][k] in acStats.keys():
                     acStats[pixels[i][j][k]] += 1
+                """
+                if i%8==0 and j%8==0:
+                    if pixels[i][j][k] in dcStats.keys():
+                        dcStats[pixels[i][j][k]] += 1
+                    else:
+                        dcStats[pixels[i][j][k]] = 1
                 else:
-                    acStats[pixels[i][j][k]] = 1
+                    if pixels[i][j][k] in acStats.keys():
+                        acStats[pixels[i][j][k]] += 1
+                    else:
+                        acStats[pixels[i][j][k]] = 1
+                """
 
-#for temp in statsArrayAc:
-#    print(temp[0],end=", ")
-#for key,value in acStats.items():
-#    print(key,value)
+    #for temp in statsArrayAc:
+    #    print(temp[0],end=", ")
+    #for key,value in acStats.items():
+    #    print(key,value)
 
-#
+    #
 
-statsArrayAc, acStats = deriveCodeLength(acStats)
-huffmannCodeAc = deriveHuffmannCode(acStats)
+    acStats = deriveCodeLength(acStats)
+    huffmannCodeAc = deriveHuffmannCode(acStats)
 
-DataAc = bin(0)
-for i in range(len(pixels)):
-    for j in range(len(pixels[0])):
-        for k in range(3):
-            if i%8 or j%8:
-                DataAc += huffmannCodeAc[pixels[i][j][k]]
+    DataAc = ""
+    for i in range(len(pixels)):
+        for j in range(len(pixels[0])):
+            for k in range(3):
+                if i%8!=0 or j%8!=0:
+                    #print(huffmannCodeAc[chr(pixels[i][j][k])][2:])
+                    DataAc += huffmannCodeAc[chr(pixels[i][j][k])][2:]
+    
+    dcStats = deriveCodeLength(dcStats)
+    huffmannCodeDc = deriveHuffmannCode(dcStats)
 
-"""
-deriveCodeLength(statsArrayDc,dcStats)
-huffmannCodeDc = deriveHuffmannCode(dcStats)
+    DataDc = ""
+    for i in range(len(pixels)):
+        for j in range(len(pixels[0])):
+            for k in range(3):
+                if i%8==0 and j%8==0:
+                    #print(huffmannCodeDc[chr(pixels[i][j][k])][2:])
+                    DataDc += huffmannCodeDc[chr(pixels[i][j][k])][2:]
+    
+    mainDict = {}
 
-DataDc = bin(0)
-for i in range(len(pixels)):
-    for j in range(len(pixels[0])):
-        for k in range(3):
-            if i%8==0 and j%8==0:
-                DataDc += huffmannCodeDc[pixels[i][j][k]]
-"""
+    mainDict['DC'] = jsonConvert(DataDc, huffmannCodeDc)
+    mainDict['AC'] = jsonConvert(DataAc, huffmannCodeAc)
 
-print(huffmannCodeAc)
-print(pixels[0][1])
-#print(DataAc)
+    #print(huffmannCodeAc)
+
+    with open(image_file_name.split('.')[0]+"_encoded.json", "w") as outfile:
+        json.dump(mainDict, outfile)
+    
+    #print(mainDict['AC']['data'])
+
+
+    """
+    deriveCodeLength(statsArrayDc,dcStats)
+    huffmannCodeDc = deriveHuffmannCode(dcStats)
+
+    DataDc = bin(0)
+    for i in range(len(pixels)):
+        for j in range(len(pixels[0])):
+            for k in range(3):
+                if i%8==0 and j%8==0:
+                    DataDc += huffmannCodeDc[pixels[i][j][k]]
+    """
+
+if __name__ == '__main__':
+    main()
