@@ -2,91 +2,10 @@ from collections import defaultdict
 import math
 import numpy as np
 from PIL import Image
-from scipy.fftpack import dct, idct
 import json
+#from scipy.fftpack import dct, idct
 
-def quantization(bl):
-    q=np.array([[16,11,10,16,24,40,51,61]
-    ,[12,12,14,19,26,58,60,55],
-    [14,13,16,24,40,57,69,56],
-    [14,17,22,29,51,87,80,62],
-    [18,22,37,56,68,109,103,77],
-    [24,35,55,64,81,104,113,92],
-    [49,64,78,87,103,121,120,101],
-    [72,92,95,98,112,100,103,99]])
-    return np.divide(bl,q).astype(int)
-
-def reconstruct(m):
-    q=np.array([[16,11,10,16,24,40,51,61]
-    ,[12,12,14,19,26,58,60,55],
-    [14,13,16,24,40,57,69,56],
-    [14,17,22,29,51,87,80,62],
-    [18,22,37,56,68,109,103,77],
-    [24,35,55,64,81,104,113,92],
-    [49,64,78,87,103,121,120,101],
-    [72,92,95,98,112,100,103,99]])
-    return np.multiply(q,m)
-
-def deriveCodeLength(stats):
-    #SORTING STATISTICS AND INITIALISING CANONICAL TABLES
-    statsArray = []
-    for key,value in stats.items():
-        statsArray.append([value,[key]])
-        stats[key] = 0
-    statsArray.sort(reverse=True)
-    #CALCULATING CANONICAL CODE LENGTHS
-    while len(statsArray)!=1:
-        #print(len(statsArray))
-        x, y = statsArray[-1], statsArray[-2]
-        z = [x[0]+y[0],x[1]+y[1]]
-        for zs in z[1]:
-            stats[zs] += 1
-        statsArray = statsArray[:-2]
-        statsArray.append(z)
-        statsArray.sort(reverse=True)
-        # BETTER SORTING
-    return stats
-
-def deriveHuffmannCode(Stats):
-    statsArray = []
-    for key,value in Stats.items():
-        statsArray.append([value,key])
-    statsArray.sort()
-    huffmannCode = {}
-    code = bin(0)
-    codeLength = 1
-    for [length, character] in statsArray:
-        while codeLength<length:
-            codeLength+=1
-            code += '0'
-        huffmannCode[chr(character)] = code
-        code = bin(int(code,2)+1)
-    return huffmannCode
-
-dctBlock=np.zeros((8,8),dtype=float)
-for i in range(8):
-    for j in range(8):
-        if(i==0):
-            dctBlock[i][j]=1/math.sqrt(8)
-        else:
-            dctBlock[i][j]=math.sqrt(2/8)*math.cos((2*j+1)*i*math.pi/16)
-
-def bin_to_chr(b):
-    result = 0
-    for i in range(len(b)):
-        result += (2**(i))*int(b[-i-1])
-    return chr(result)
-
-def jsonConvert(Data, huffmancode):
-    r= len(Data)%7
-    reminder= Data[-r:]
-    output = ""
-    for i in range(len(Data)//7):
-        #print(bin_to_chr(Data[i*7:i*7+7]))
-        output += bin_to_chr(Data[i*7:i*7+7])
-    #print(output)
-    return {'remainder':reminder, 'data':output, 'huffmancode':huffmancode}
-
+from unit_functions import quantization, derive_code_length, derive_huffmann_code, convert_to_json
 
 def main():
     #GETTING IMAGE
@@ -95,16 +14,24 @@ def main():
     #RESIZING IMAGE AND CONVERTING IT INTO ARRAY
     resize_ratio = 25
     rows, columns = img.size
-    print(img.size)
+    print("Original image dimensions: ",img.size)
     rows = int(rows*(resize_ratio/100))
     columns = int(columns*(resize_ratio/100))
     rows = 360
     columns = 480
     img = img.resize((columns,rows))
-    print(img.size)
-
+    print("New image dimensions: ",img.size)
     #img.show()
     pixels=np.asarray(img)
+
+    #INITIALIZING DCT BLOCK
+    dctBlock=np.zeros((8,8),dtype=float)
+    for i in range(8):
+        for j in range(8):
+            if(i==0):
+                dctBlock[i][j]=1/math.sqrt(8)
+            else:
+                dctBlock[i][j]=math.sqrt(2/8)*math.cos((2*j+1)*i*math.pi/16)
 
     #APPLYING DCT AND QAUNTIZATION
     for i in range(len(pixels)//8):
@@ -137,8 +64,8 @@ def main():
                 else:
                     acStats[pixels[i][j][k]] += 1
 
-    acStats = deriveCodeLength(acStats)
-    huffmannCodeAc = deriveHuffmannCode(acStats)
+    acStats = derive_code_length(acStats)
+    huffmannCodeAc = derive_huffmann_code(acStats)
 
     DataAc = ""
     for i in range(len(pixels)):
@@ -148,8 +75,8 @@ def main():
                     #print(huffmannCodeAc[chr(pixels[i][j][k])][2:])
                     DataAc += huffmannCodeAc[chr(pixels[i][j][k])][2:]
     #print(DataAc)
-    dcStats = deriveCodeLength(dcStats)
-    huffmannCodeDc = deriveHuffmannCode(dcStats)
+    dcStats = derive_code_length(dcStats)
+    huffmannCodeDc = derive_huffmann_code(dcStats)
 
     DataDc = ""
     for i in range(len(pixels)):
@@ -162,8 +89,8 @@ def main():
     mainDict = {}
 
     mainDict['shape'] = (rows, columns)
-    mainDict['DC'] = jsonConvert(DataDc, huffmannCodeDc)
-    mainDict['AC'] = jsonConvert(DataAc, huffmannCodeAc)
+    mainDict['DC'] = convert_to_json(DataDc, huffmannCodeDc)
+    mainDict['AC'] = convert_to_json(DataAc, huffmannCodeAc)
 
     #print(huffmannCodeAc)
 
