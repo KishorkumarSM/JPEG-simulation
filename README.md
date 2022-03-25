@@ -1,4 +1,4 @@
-# JPEG-simulation
+# JPEG-simulation - In Progress
 ## About
 A lossy JPEG compression program in python using PIL library. The program uses Discrete cosine transform, quantisation and entropy coding(Huffman) to perform a complete simulation of the JPEG compression technique. This compressed text data is then reverse processed to obtain the original high quality image.
 - JPEG_Encoder - Compressess and writes the image file into a json file.
