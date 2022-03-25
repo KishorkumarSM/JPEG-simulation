@@ -7,10 +7,10 @@ A lossy JPEG compression program in python using PIL library. The program uses D
 
 ## Useful Links
 ### Sample input image file
-Since, tiff files are too large to store in github repo. Here's the link to a sample image,
+Since, tiff files are too large to store in github repo. Here's the link to a sample image,<br />
 https://drive.google.com/file/d/13Kro0PwDfvHPoxPz1jNnJSZVoaSduVFd/view?usp=sharing
 ### Bibliography
-Refer this link, for complete understanding of the project,
+Refer this link, for complete understanding of the project,<br />
 https://yasoob.me/posts/understanding-and-writing-jpeg-decoder-in-python/
 
 
