@@ -96,6 +96,8 @@ def main():
 
     with open(image_file_name.split('.')[0]+"_encoded.json", "w") as outfile:
         json.dump(mainDict, outfile)
+    
+    print(len(DataDc))
 
 if __name__ == '__main__':
     main()

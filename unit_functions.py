@@ -73,3 +73,12 @@ def convert_to_json(Data, huffmancode):
         output += bin_to_chr(Data[i*7:i*7+7])
     #print(output)
     return {'remainder':reminder, 'data':output, 'huffmancode':huffmancode}
+
+def ord_to_bin(n):
+    result = ""
+    while n!=0:
+        result = chr(n%2) + result
+        n//=2
+    while len(result)<7:
+        result = '0'+result
+    return result

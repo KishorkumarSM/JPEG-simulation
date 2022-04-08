@@ -1,6 +1,7 @@
 import json
+from turtle import shape
 
-from JPEG_Encoder import reconstruct
+from unit_functions import ord_to_bin
 
 class huffmanTree:
     def __init__(self):
@@ -19,21 +20,27 @@ class huffmanTree:
                 self.right.add(key[1:],value)
         else:
             self.val = value
+    def decode(self, data):
+        result=[]
+        temp = self
+        for c in data:
+            if c=="0":
+                temp = temp.left
+            elif c=="1":
+                temp = temp.right
+            if temp.val != None:
+                result.append(temp.val)
+                temp=self
+        return result
 
 
-def ord_to_bin(n):
-    result = ""
-    while n!=0:
-        result = chr(n%2) + result
-        n//=2
-    while len(result)<7:
-        result = '0'+result
-    return result
 
 def main():
     image_file_name = "DSC00121.tiff"
     with open(image_file_name.split('.')[0]+"_encoded.json", 'r') as openfile:
         mainDict = json.load(openfile)
+
+    print(len(mainDict['DC']['data']))
     output = ""
     #print(mainDict['DC']['data'][0])
     for c in mainDict['DC']['data']:
@@ -42,10 +49,9 @@ def main():
     tree = huffmanTree()
     hc = mainDict['DC']['huffmancode']
     for k in hc.keys():
-        tree.add(str(hc[k])[2:],ord(k))
+        tree.add(str(hc[k])[2:],(k))
     
-    
-
-
+    dc_output = tree.decode(output)
+    print(mainDict["shape"], len(dc_output))
 if __name__ == "__main__":
     main()

@@ -14,3 +14,5 @@ for i in range(len(huffmannTableAc)-1,0,-1):
 if z[0]>huffmannTableAc[0][0]:
     huffmannTableAc = [z] + huffmannTableAc
 """
+
+print(int("100"))
