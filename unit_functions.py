@@ -1,3 +1,4 @@
+from collections import defaultdict
 import numpy as np
 
 def quantization(bl):
@@ -44,10 +45,24 @@ def derive_code_length(stats):    #returns dictionary of code lengths of each ch
 
 def derive_huffmann_code(Stats):  #returns dictionary of canonical huffmann code using codelengths dictionary
     statsArray = []
-    for key,value in Stats.items():
-        statsArray.append([value,key])
+    for key in Stats.keys():
+        statsArray.append([Stats[key],[key]])
     statsArray.sort()
-    huffmannCode = {}
+    #print(statsArray)
+    huffmannCode = defaultdict(lambda: '')
+    while len(statsArray)>1:
+        a = statsArray[1]
+        b = statsArray[0]
+        statsArray = statsArray[2:]
+        for c in a[1]:
+            huffmannCode[c] = '0' + huffmannCode[c]
+        for c in b[1]:
+            huffmannCode[c] = '1' + huffmannCode[c]
+        ab = [a[0]+b[0], a[1]+b[1]]
+        statsArray.append(ab)
+        statsArray.sort()
+    return huffmannCode
+    """
     code = bin(0)
     codeLength = 1
     for [length, character] in statsArray:
@@ -57,12 +72,13 @@ def derive_huffmann_code(Stats):  #returns dictionary of canonical huffmann code
         huffmannCode[chr(character)] = code
         code = bin(int(code,2)+1)
     return huffmannCode
+    """
 
 def bin_to_chr(b):
     result = 0
     for i in range(len(b)):
         result += (2**(i))*int(b[-i-1])
-    return chr(result)
+    return result
 
 def convert_to_json(Data, huffmancode):
     r= len(Data)%7
@@ -70,14 +86,18 @@ def convert_to_json(Data, huffmancode):
     output = ""
     for i in range(len(Data)//7):
         #print(bin_to_chr(Data[i*7:i*7+7]))
-        output += bin_to_chr(Data[i*7:i*7+7])
+        output += chr(bin_to_chr(Data[i*7:i*7+7]))
+        
     #print(output)
     return {'remainder':reminder, 'data':output, 'huffmancode':huffmancode}
 
 def ord_to_bin(n):
     result = ""
     while n!=0:
-        result = chr(n%2) + result
+        if n%2:
+            result = '1' + result
+        else:
+            result = '0' + result
         n//=2
     while len(result)<7:
         result = '0'+result

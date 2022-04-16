@@ -33,6 +33,7 @@ def main():
             else:
                 dctBlock[i][j]=math.sqrt(2/8)*math.cos((2*j+1)*i*math.pi/16)
 
+    #print(pixels)
     #APPLYING DCT AND QAUNTIZATION
     for i in range(len(pixels)//8):
         for j in range(len(pixels[0])//8):
@@ -51,7 +52,16 @@ def main():
                 for x in range(8):
                     for y in range(8):
                         pixels[i*8+x][j*8+y][k]=int(imgBlock2[x][y])
-
+    """
+    pixels = [[[1,2,3],[4,5,6],[7,8,9],[10,11,12],[13,14,15],[16,17,18],[19,20,21],[22,23,24]],
+            [[1,2,3],[4,5,6],[7,8,9],[10,11,12],[13,14,15],[16,17,18],[19,20,21],[22,23,24]],
+            [[1,2,3],[4,5,6],[7,8,9],[10,11,12],[13,14,15],[16,17,18],[19,20,21],[22,23,24]],
+            [[1,2,3],[4,5,6],[7,8,9],[10,11,12],[13,14,15],[16,17,18],[19,20,21],[22,23,24]],
+            [[1,2,3],[4,5,6],[7,8,9],[10,11,12],[13,14,15],[16,17,18],[19,20,21],[22,23,24]],
+            [[1,2,3],[4,5,6],[7,8,9],[10,11,12],[13,14,15],[16,17,18],[19,20,21],[22,23,24]],
+            [[1,2,3],[4,5,6],[7,8,9],[10,11,12],[13,14,15],[16,17,18],[19,20,21],[22,23,24]],
+            [[1,2,3],[4,5,6],[7,8,9],[10,11,12],[13,14,15],[16,17,18],[19,20,21],[22,23,24]]]
+    """
     #GETTING STATISTICS OF AC AND DC VALUES
     acStats = defaultdict(lambda: int(0))
     dcStats = defaultdict(lambda: int(0))
@@ -60,11 +70,11 @@ def main():
         for j in range(len(pixels[0])):
             for k in range(3):
                 if i%8==0 and j%8==0:
-                    dcStats[pixels[i][j][k]] += 1
+                    dcStats[chr(pixels[i][j][k])] += 1
                 else:
-                    acStats[pixels[i][j][k]] += 1
+                    acStats[chr(pixels[i][j][k])] += 1
 
-    acStats = derive_code_length(acStats)
+    #acStats = derive_code_length(acStats)
     huffmannCodeAc = derive_huffmann_code(acStats)
 
     DataAc = ""
@@ -73,10 +83,14 @@ def main():
             for k in range(3):
                 if i%8!=0 or j%8!=0:
                     #print(huffmannCodeAc[chr(pixels[i][j][k])][2:])
-                    DataAc += huffmannCodeAc[chr(pixels[i][j][k])][2:]
+                    DataAc += huffmannCodeAc[chr(pixels[i][j][k])]
     #print(DataAc)
-    dcStats = derive_code_length(dcStats)
+    #print(dcStats)
+    #dcStats = derive_code_length(dcStats)
     huffmannCodeDc = derive_huffmann_code(dcStats)
+    
+    #for c in huffmannCodeDc.values():
+    #    print(c)
 
     DataDc = ""
     for i in range(len(pixels)):
@@ -84,8 +98,9 @@ def main():
             for k in range(3):
                 if i%8==0 and j%8==0:
                     #print(huffmannCodeDc[chr(pixels[i][j][k])][2:])
-                    DataDc += huffmannCodeDc[chr(pixels[i][j][k])][2:]
+                    DataDc += huffmannCodeDc[chr(pixels[i][j][k])]
     
+
     mainDict = {}
 
     mainDict['shape'] = (rows, columns)
@@ -97,7 +112,7 @@ def main():
     with open(image_file_name.split('.')[0]+"_encoded.json", "w") as outfile:
         json.dump(mainDict, outfile)
     
-    print(len(DataDc))
+    print(len(mainDict['DC']['data']))
 
 if __name__ == '__main__':
     main()
